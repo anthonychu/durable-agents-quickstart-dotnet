@@ -31,26 +31,11 @@ param dtsSkuName string = 'Consumption'
 param dtsName string = ''
 param taskHubName string = ''
 
-param cosmosDatabaseName string = 'dev-snippet-db'
-param cosmosContainerName string = 'code-snippets'
-
 @allowed(['gpt-4o-mini'])
 param chatModelName string = 'gpt-4o-mini'
 
 @allowed(['text-embedding-3-small'])
 param embeddingModelName string = 'text-embedding-3-small'
-
-// APIM is not used in the lab - commented out to reduce deployment complexity
-// param apimServiceName string = ''
-// param apimPublisherName string = 'Snippy API'
-// param apimPublisherEmail string = 'admin@contoso.com'
-
-// App registration parameters - values set by preprovision hook (scripts/setup-app-registration.sh)
-// NOTE: App registration is only needed for APIM integration, which is currently disabled
-// param appRegistrationDisplayName string = ''  // Set automatically: snippy-mcp-server-{resourceToken}
-// param appRegistrationClientId string = ''  // Set via 'azd env set APP_REGISTRATION_CLIENT_ID <value>'
-// param appRegistrationObjectId string = ''
-// param appRegistrationScopeId string = ''   // Set via 'azd env set APP_REGISTRATION_SCOPE_ID <value>'
 
 import * as regionSelector from './app/util/region-selector.bicep'
 var abbrs = loadJsonContent('./abbreviations.json')
@@ -198,23 +183,6 @@ module openaiRoleAssignmentDeveloper 'app/rbac/openai-access.bicep' = if (!empty
   }
 }
 
-// Azure Cosmos DB for snippet storage
-module cosmosDb './app/cosmos-db.bicep' = {
-  name: 'cosmosDb'
-  scope: rg
-  params: { 
-    location: location
-    tags: tags
-    accountName: '${abbrs.documentDBDatabaseAccounts}${resourceToken}-${actualSuffix}'
-    databaseName: cosmosDatabaseName
-    containerName: cosmosContainerName
-    dataContributorIdentityIds: [
-      apiUserAssignedIdentity.outputs.principalId
-      deployer().objectId
-    ]
-  }
-}
-
 module api './app/api.bicep' = {
   name: 'api'
   scope: rg
@@ -230,13 +198,8 @@ module api './app/api.bicep' = {
     identityId: apiUserAssignedIdentity.outputs.resourceId
     identityClientId: apiUserAssignedIdentity.outputs.clientId
     appSettings: {
-      COSMOS_ENDPOINT: cosmosDb.outputs.documentEndpoint
-      COSMOS_DATABASE_NAME: cosmosDatabaseName
-      COSMOS_CONTAINER_NAME: cosmosContainerName
-      BLOB_CONTAINER_NAME: 'snippet-backups'
       EMBEDDING_MODEL_DEPLOYMENT_NAME: openai.outputs.embeddingDeploymentName
       AGENTS_MODEL_DEPLOYMENT_NAME: openai.outputs.chatDeploymentName
-      COSMOS_VECTOR_TOP_K: '30'
       AZURE_OPENAI_ENDPOINT: openai.outputs.azureOpenAIServiceEndpoint
       PROJECT_ENDPOINT: openai.outputs.aiFoundryProjectEndpoint
       AZURE_CLIENT_ID: apiUserAssignedIdentity.outputs.clientId
@@ -254,37 +217,6 @@ module api './app/api.bicep' = {
     openaiRoleAssignment
   ]
 }
-
-// API Management service - Not used in the lab, commented out to simplify deployment
-// module apim './app/apim.bicep' = {
-//   name: 'apim'
-//   scope: rg
-//   params: {
-//     name: !empty(apimServiceName) ? apimServiceName : '${abbrs.apiManagementService}${resourceToken}-${actualSuffix}'
-//     location: regionSelector.getApimBasicV2Region(location)
-//     tags: tags
-//     publisherName: apimPublisherName
-//     publisherEmail: apimPublisherEmail
-//     skuName: 'BasicV2'
-//     skuCapacity: 1
-//     appRegistrationClientId: appRegistrationClientId
-//   }
-//   dependsOn: [
-//     appRegistration
-//   ]
-// }
-
-// App Registration for MCP Server - Only needed for APIM, commented out
-// module appRegistration './app/app-registration.bicep' = if (!empty(appRegistrationClientId) && !empty(appRegistrationScopeId)) {
-//   name: 'appRegistration'
-//   scope: rg
-//   params: {
-//     displayName: appRegistrationDisplayName
-//     applicationId: appRegistrationClientId
-//     objectId: appRegistrationObjectId
-//     scopeId: appRegistrationScopeId
-//   }
-// }
 
 // Durable Task Scheduler
 module dts './app/dts.bicep' = {
@@ -333,9 +265,6 @@ module dtsDashboardRoleAssignment 'app/rbac/dts-Access.bicep' = {
 // WARNING: Secrets (Keys, Connection Strings) are output directly and will be visible in deployment history.
 // Output names directly match the corresponding keys in local.settings.json for easier mapping.
 
-@description('Cosmos DB endpoint. Output name matches the COSMOS_ENDPOINT key in local settings.')
-output COSMOS_ENDPOINT string = cosmosDb.outputs.documentEndpoint
-
 @description('Endpoint for Azure OpenAI services. Output name matches the AZURE_OPENAI_ENDPOINT key in local settings.')
 output AZURE_OPENAI_ENDPOINT string = openai.outputs.azureOpenAIServiceEndpoint
 
@@ -347,25 +276,3 @@ output AZURE_FUNCTION_NAME string = api.outputs.SERVICE_API_NAME // Function App
 
 @description('Connection string for the Azure Storage Account. Output name matches the AzureWebJobsStorage key in local settings.')
 output AZUREWEBJOBSSTORAGE string = storage.outputs.primaryBlobEndpoint
-
-// APIM-related outputs - Not used in the lab, commented out
-// @description('API Management gateway URL for external API access.')
-// output APIM_GATEWAY_URL string = apim.outputs.gatewayUrl
-
-// @description('API Management service name.')
-// output APIM_SERVICE_NAME string = apim.outputs.apiManagementName
-
-// @description('API Management management API URL.')
-// output APIM_MANAGEMENT_URL string = apim.outputs.managementApiUrl
-
-// @description('App Registration Application ID (Client ID).')
-// output APP_REGISTRATION_CLIENT_ID string = !empty(appRegistrationClientId) ? appRegistrationClientId : ''
-
-// @description('App Registration Application ID URI.')
-// output APP_REGISTRATION_ID_URI string = !empty(appRegistrationClientId) ? 'api://${appRegistrationClientId}' : ''
-
-// @description('App Registration Scope ID.')
-// output APP_REGISTRATION_SCOPE_ID string = !empty(appRegistrationScopeId) ? appRegistrationScopeId : ''
-
-// @description('App Registration Display Name.')
-// output APP_REGISTRATION_DISPLAY_NAME string = appRegistrationDisplayName
