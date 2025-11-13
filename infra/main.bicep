@@ -269,3 +269,6 @@ output AZURE_FUNCTION_NAME string = api.outputs.SERVICE_API_NAME // Function App
 
 @description('Connection string for the Azure Storage Account. Output name matches the AzureWebJobsStorage key in local settings.')
 output AZUREWEBJOBSSTORAGE string = storage.outputs.primaryBlobEndpoint
+
+@description('Name of the Durable Task Scheduler resource.')
+output DTS_NAME string = dts.outputs.dts_NAME
