@@ -41,7 +41,7 @@ var autoSuffix = toLower(take(uniqueString(subscription().id, environmentName, l
 var actualSuffix = !empty(nameSuffix) ? nameSuffix : autoSuffix
 
 // Base name for all resources
-var resourceToken = 'snippymcplab'
+var resourceToken = 'durableagents'
 
 var tags = { 'azd-env-name': environmentName }
 var functionAppName = !empty(apiServiceName) ? apiServiceName : '${abbrs.webSitesFunctions}api-${resourceToken}-${actualSuffix}'

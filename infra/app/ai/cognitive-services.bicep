@@ -57,15 +57,15 @@ resource chatModelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2
 // This is required for using Azure AI Foundry Agent Service
 resource aiFoundryProject 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = {
   parent: aiServices
-  name: 'snippyProject'
+  name: 'durableAgentsProject'
   location: location
   tags: tags
   identity: {
     type: 'SystemAssigned'
   }
   properties: {
-    displayName: 'Snippy Project'
-    description: 'AI Foundry project for code snippets and documentation agents'
+    displayName: 'Durable Agents Project'
+    description: 'AI Foundry project for durable agents'
   }
 }
 
