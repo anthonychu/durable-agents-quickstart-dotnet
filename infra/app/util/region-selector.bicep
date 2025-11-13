@@ -61,9 +61,6 @@ var modelRegionMap = {
 
 func getModelRegion(location string, modelName string) string => getAdjustedRegion(location, modelRegionMap[?modelName])
 
-func getCognitiveServicesRegion(location string, chatModelName string, embeddingModelName string) string =>
-  contains(modelRegionMap[?chatModelName].?supportedRegions, getModelRegion(location, embeddingModelName)) ? getModelRegion(getModelRegion(location, embeddingModelName), chatModelName): location
-
 // See https://learn.microsoft.com/azure/ai-services/agents/concepts/model-region-support#azure-openai-models
 // Currently supported regions:
 //    Australia East, East US, East US 2, France Central, Japan East, Norway East, South India, Sweden Central,
@@ -82,8 +79,8 @@ var agentServiceRegionMap = {
 func getAgentServiceRegion(location string) string => getAdjustedRegion(location, agentServiceRegionMap)
 
 @export()
-@description('Based on an intended region, gets a supported region for the specified embedding model.')
-func getAiServicesRegion(location string, chatModelName string, embeddingModelName string) string => getCognitiveServicesRegion(getAgentServiceRegion(location), chatModelName, embeddingModelName)
+@description('Based on an intended region, gets a supported region for the specified chat model.')
+func getAiServicesRegion(location string, chatModelName string) string => getModelRegion(getAgentServiceRegion(location), chatModelName)
 
 // See https://learn.microsoft.com/azure/azure-functions/flex-consumption-how-to#view-currently-supported-regions
 // Currently supported regions: 

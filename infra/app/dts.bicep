@@ -2,7 +2,6 @@ param ipAllowlist array
 param location string
 param tags object = {}
 param name string
-param taskhubname string
 param skuName string
 
 resource dts 'Microsoft.DurableTask/schedulers@2025-11-01' = {
@@ -19,7 +18,7 @@ resource dts 'Microsoft.DurableTask/schedulers@2025-11-01' = {
 
 resource taskhub 'Microsoft.DurableTask/schedulers/taskhubs@2025-11-01' = {
   parent: dts
-  name: taskhubname
+  name: 'default'
 }
 
 output dts_NAME string = dts.name

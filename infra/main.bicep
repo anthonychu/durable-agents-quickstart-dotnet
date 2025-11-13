@@ -29,13 +29,9 @@ param resourceGroupName string = ''
 param storageAccountName string = ''
 param dtsSkuName string = 'Consumption'
 param dtsName string = ''
-param taskHubName string = ''
 
 @allowed(['gpt-4o-mini'])
 param chatModelName string = 'gpt-4o-mini'
-
-@allowed(['text-embedding-3-small'])
-param embeddingModelName string = 'text-embedding-3-small'
 
 import * as regionSelector from './app/util/region-selector.bicep'
 var abbrs = loadJsonContent('./abbreviations.json')
@@ -144,21 +140,20 @@ module appInsightsRoleAssignmentApi './app/rbac/appinsights-access.bicep' = {
   }
 }
 
-// Azure OpenAI for chat and embeddings
+// Azure OpenAI for chat
 module openai './app/ai/cognitive-services.bicep' = {
   name: 'openai'
   scope: rg
   params: {
-    location: regionSelector.getAiServicesRegion(location, chatModelName, embeddingModelName)
+    location: regionSelector.getAiServicesRegion(location, chatModelName)
     tags: tags
     chatModelName: chatModelName
     aiServicesName: '${abbrs.cognitiveServicesAccounts}${resourceToken}-${actualSuffix}'
-    embeddingModelName: embeddingModelName
   }
 }
 
 // Assign Cognitive Services OpenAI User role to the managed identity for OpenAI access
-// This role enables: using chat/embedding models and AI agents through AIServices
+// This role enables: using chat models and AI agents through AIServices
 var CognitiveServicesOpenAIUser = '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
 module openaiRoleAssignment 'app/rbac/openai-access.bicep' = {
   name: 'openaiRoleAssignment'
@@ -198,16 +193,12 @@ module api './app/api.bicep' = {
     identityId: apiUserAssignedIdentity.outputs.resourceId
     identityClientId: apiUserAssignedIdentity.outputs.clientId
     appSettings: {
-      EMBEDDING_MODEL_DEPLOYMENT_NAME: openai.outputs.embeddingDeploymentName
       AGENTS_MODEL_DEPLOYMENT_NAME: openai.outputs.chatDeploymentName
       AZURE_OPENAI_ENDPOINT: openai.outputs.azureOpenAIServiceEndpoint
       PROJECT_ENDPOINT: openai.outputs.aiFoundryProjectEndpoint
       AZURE_CLIENT_ID: apiUserAssignedIdentity.outputs.clientId
-      DTS_CONNECTION_STRING: 'Endpoint=${dts.outputs.dts_URL};Authentication=ManagedIdentity;ClientID=${apiUserAssignedIdentity.outputs.clientId}'
+      DURABLE_TASK_SCHEDULER_CONNECTION_STRING: 'Endpoint=${dts.outputs.dts_URL};Authentication=ManagedIdentity;ClientID=${apiUserAssignedIdentity.outputs.clientId}'
       TASKHUB_NAME: dts.outputs.TASKHUB_NAME
-      // Override host.json durableTask storageProvider for Azure (use DTS instead of azureStorage)
-      'AzureFunctionsJobHost__extensions__durableTask__storageProvider__type': 'azureManaged'
-      'AzureFunctionsJobHost__extensions__durableTask__storageProvider__connectionStringName': 'DTS_CONNECTION_STRING'
     }
   }
   dependsOn: [
@@ -224,7 +215,6 @@ module dts './app/dts.bicep' = {
   name: 'dtsResource'
   params: {
     name: !empty(dtsName) ? dtsName : '${abbrs.dts}${resourceToken}-${actualSuffix}'
-    taskhubname: !empty(taskHubName) ? taskHubName : '${abbrs.taskhub}${resourceToken}${actualSuffix}'
     location: location
     tags: tags
     ipAllowlist: [
@@ -264,6 +254,9 @@ module dtsDashboardRoleAssignment 'app/rbac/dts-Access.bicep' = {
 // Use 'azd env get-values' to retrieve these after provisioning.
 // WARNING: Secrets (Keys, Connection Strings) are output directly and will be visible in deployment history.
 // Output names directly match the corresponding keys in local.settings.json for easier mapping.
+
+@description('Name of the resource group.')
+output AZURE_RESOURCE_GROUP string = rg.name
 
 @description('Endpoint for Azure OpenAI services. Output name matches the AZURE_OPENAI_ENDPOINT key in local settings.')
 output AZURE_OPENAI_ENDPOINT string = openai.outputs.azureOpenAIServiceEndpoint

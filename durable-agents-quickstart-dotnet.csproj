@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>durable_agents_quickstart_dotnet</RootNamespace>
+    <UserSecretsId>53881d69-a278-4df2-93fa-86b0426ad098</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
