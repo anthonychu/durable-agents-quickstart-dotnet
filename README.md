@@ -25,9 +25,8 @@
 
 1. Ask a follow-up question in the same thread:
    ```bash
-   curl -i -X POST "https://$(azd env get-value AZURE_FUNCTION_NAME).azurewebsites.net/api/agents/MyDurableAgent/run?code=$API_KEY&threadId=$THREAD_ID" \
+   curl -i -X POST "https://$(azd env get-value AZURE_FUNCTION_NAME).azurewebsites.net/api/agents/MyDurableAgent/run?code=$API_KEY&thread_id=$THREAD_ID" \
      -H "Content-Type: text/plain" \
      -d "Which is easiest to learn?"
    ```
 
-   
