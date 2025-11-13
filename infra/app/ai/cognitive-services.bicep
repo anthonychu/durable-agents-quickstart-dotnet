@@ -33,7 +33,7 @@ resource aiServices 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = 
   properties: {
     customSubDomainName: toLower(aiServicesName)
     publicNetworkAccess: 'Enabled'
-    disableLocalAuth: false
+    disableLocalAuth: true
     allowProjectManagement: true
   }
 }
